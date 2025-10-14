@@ -1,0 +1,30 @@
+﻿# ---- Node / Next.js ----
+node_modules/
+.next/
+out/
+dist/
+.turbo/
+.vercel/
+coverage/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# ---- Env files ----
+.env
+.env.*
+!.env.example
+
+# ---- Tauri (Rust) build outputs ----
+target/
+src-tauri/target/
+src-tauri/.tauri-build/
+src-tauri/gen/
+
+# Keep the lockfile for reproducible builds
+!src-tauri/Cargo.lock
+
+# ---- OS cruft ----
+Thumbs.db
+desktop.ini
+.DS_Store
