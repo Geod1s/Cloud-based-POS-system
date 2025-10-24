@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { createClient } from "@/lib/client"
+import { createBrowserClient } from "@/lib/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator"
 import { Minus, Plus, Trash2, Search } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { AddCustomerDialog } from "@/components/add-customer-dialog"
+import { queueOp } from "@/lib/offline-ops" // ✅ added
 
 interface Product {
   id: string
@@ -48,7 +49,7 @@ export function POSInterface({ products, customers }: POSInterfaceProps) {
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = createBrowserClient()
 
   const filteredProducts = products.filter(
     (product) =>
@@ -102,9 +103,42 @@ export function POSInterface({ products, customers }: POSInterfaceProps) {
     setError(null)
 
     try {
+      // ✅ offline-friendly: use getSession (no network) instead of getUser
       const {
-        data: { user },
-      } = await supabase.auth.getUser()
+        data: { session },
+      } = await supabase.auth.getSession()
+      const user = session?.user ?? null
+
+      const userId = user?.id ?? "local"
+
+      // Prepare the payload once (used for online path and as offline fallback)
+      const opPayload = {
+        items: cart.map((c) => ({
+          product_id: c.product.id,
+          name: c.product.name,
+          unit_price: Number(c.product.price),
+          quantity: c.quantity,
+          stock_before: c.product.stock_quantity,
+        })),
+        paymentMethod,
+        totals: { subtotal, tax, total },
+        customerId: selectedCustomer || null,
+      }
+
+      // ✅ Offline-first: if no internet, queue locally and reset UI
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        await queueOp(userId, "CREATE_SALE", opPayload)
+        // Reset UI
+        setCart([])
+        setSelectedCustomer("")
+        setPaymentMethod("cash")
+        setSearchTerm("")
+        setIsProcessing(false)
+        console.info("Sale queued for sync (offline).")
+        return
+      }
+
+      // ===== Existing online flow (unchanged) =====
 
       // Generate sale number
       const { data: saleNumberData } = await supabase.rpc("generate_sale_number")
@@ -139,7 +173,6 @@ export function POSInterface({ products, customers }: POSInterfaceProps) {
       }))
 
       const { error: itemsError } = await supabase.from("sale_items").insert(saleItems)
-
       if (itemsError) throw itemsError
 
       // Update product stock
@@ -163,7 +196,6 @@ export function POSInterface({ products, customers }: POSInterfaceProps) {
           remaining_amount: total,
           status: "pending",
         })
-
         if (debtError) throw debtError
       }
 
@@ -177,7 +209,43 @@ export function POSInterface({ products, customers }: POSInterfaceProps) {
       router.push(`/dashboard/sales/${sale.id}`)
       router.refresh()
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred")
+      const msg = error instanceof Error ? error.message : String(error)
+
+      // ✅ Network fallback: queue if it looks like a connectivity error
+      if (/fetch|network|offline/i.test(msg)) {
+        try {
+          const {
+            data: { session },
+          } = await supabase.auth.getSession()
+          const user = session?.user ?? null
+          const userId = user?.id ?? "local"
+
+          const opPayload = {
+            items: cart.map((c) => ({
+              product_id: c.product.id,
+              name: c.product.name,
+              unit_price: Number(c.product.price),
+              quantity: c.quantity,
+              stock_before: c.product.stock_quantity,
+            })),
+            paymentMethod,
+            totals: { subtotal, tax, total },
+            customerId: selectedCustomer || null,
+          }
+          await queueOp(userId, "CREATE_SALE", opPayload)
+          // Reset UI after queuing
+          setCart([])
+          setSelectedCustomer("")
+          setPaymentMethod("cash")
+          setSearchTerm("")
+          console.info("Sale queued for sync due to network error.")
+          setError(null)
+        } catch {
+          setError(msg)
+        }
+      } else {
+        setError(msg)
+      }
     } finally {
       setIsProcessing(false)
     }

@@ -1,23 +1,26 @@
 [package]
-name = "cloud-pos-system"
+name = "app"
 version = "0.1.0"
-description = "Cloud POS System with Local-First Architecture"
+description = "A Tauri App"
 authors = ["you"]
+license = ""
+repository = ""
 edition = "2021"
+rust-version = "1.77.2"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2.0", features = [] }
-
+tauri-build = { version = "2.4.1", features = [] }
 
 [dependencies]
-tauri = { version = "2.0", features = [] }
-tauri-plugin-sql = { version = "2.0", features = ["sqlite"] }
-serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-uuid = { version = "1.0", features = ["v4", "serde"] }
-chrono = { version = "0.4", features = ["serde"] }
-tokio = { version = "1", features = ["full"] }
-
-[features]
-default = ["custom-protocol"]
-custom-protocol = ["tauri/custom-protocol"]
+serde = { version = "1.0", features = ["derive"] }
+log = "0.4"
+tauri = { version = "2.8.5", features = [] }
+tauri-plugin-log = "2"
+tauri-plugin-sql = { version = "2", features = ["sqlite"] }
