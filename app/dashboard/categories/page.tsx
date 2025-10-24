@@ -1,82 +1,34 @@
-// app/dashboard/categories/page.tsx
-"use client";
+import { createClient } from "@/lib/server"
+import { redirect } from "next/navigation"
+import { CategoriesTable } from "@/components/categories-table"
+import { AddCategoryDialog } from "@/components/add-category-dialog"
 
-import * as React from "react";
-import { useRouter } from "next/navigation";
-import { createBrowserClient } from "@/lib/client";
-import { CategoriesTable } from "@/components/categories-table";
-import { AddCategoryDialog } from "@/components/add-category-dialog";
+export default async function CategoriesPage() {
+  const supabase = await createClient()
 
-export default function CategoriesPage() {
-  const router = useRouter();
-  const [categories, setCategories] = React.useState<any[]>([]);
-  const [loading, setLoading] = React.useState(true);
-  const [err, setErr] = React.useState<string | null>(null);
+  // Check if user is admin
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  React.useEffect(() => {
-    let cancelled = false;
+  if (!user) {
+    redirect("/auth/login")
+  }
 
-    (async () => {
-      try {
-        setLoading(true);
-        setErr(null);
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single()
 
-        const supabase = createBrowserClient();
+  if (profile?.role !== "admin") {
+    redirect("/dashboard")
+  }
 
-        // Auth check
-        const { data: auth, error: authErr } = await supabase.auth.getUser();
-        if (authErr) throw authErr;
-        if (!auth.user) {
-          router.replace("/auth/login");
-          return;
-        }
-
-        // Role check (admin only)
-        const { data: profile, error: roleErr } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", auth.user.id)
-          .single();
-        if (roleErr) throw roleErr;
-
-        if (profile?.role !== "admin") {
-          router.replace("/dashboard");
-          return;
-        }
-
-        // Fetch categories + product ids (we'll shape to match `products (count)` structure)
-        const { data, error } = await supabase
-          .from("categories")
-          .select(
-            `
-            *,
-            products ( id )
-          `
-          )
-          .order("name", { ascending: true });
-
-        if (error) throw error;
-
-        // Shape to mimic `products (count)` so existing table logic remains unchanged
-        const shaped = (data ?? []).map((c: any) => ({
-          ...c,
-          products: Array.isArray(c.products)
-            ? [{ count: c.products.length }]
-            : [{ count: 0 }],
-        }));
-
-        if (!cancelled) setCategories(shaped);
-      } catch (e: any) {
-        if (!cancelled) setErr(e?.message || "Failed to load categories.");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [router]);
+  // Fetch categories with product count
+  const { data: categories } = await supabase
+    .from("categories")
+    .select(`
+      *,
+      products (count)
+    `)
+    .order("name")
 
   return (
     <div className="space-y-6">
@@ -88,10 +40,7 @@ export default function CategoriesPage() {
         <AddCategoryDialog />
       </div>
 
-      {loading && <div className="text-sm text-muted-foreground">Loading…</div>}
-      {err && !loading && <div className="text-sm text-red-600">Error: {err}</div>}
-
-      {!loading && !err && <CategoriesTable categories={categories} />}
+      <CategoriesTable categories={categories || []} />
     </div>
-  );
+  )
 }

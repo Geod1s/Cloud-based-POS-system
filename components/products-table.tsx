@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { createBrowserClient } from "@/lib/client"
+import { createClient } from "@/lib/client"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
@@ -45,7 +45,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const router = useRouter()
-  const supabase = createBrowserClient()
+  const supabase = createClient()
 
   const handleDelete = async () => {
     if (!deleteId) return

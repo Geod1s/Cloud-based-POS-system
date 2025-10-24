@@ -6,9 +6,9 @@ import { ProductForm } from "@/components/product-form";
 export default async function EditProductPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }) {
-  const { id } = await params;
+  const { id } = params;
   const supabase = await createClient();
 
   // Auth check
@@ -56,9 +56,3 @@ export default async function EditProductPage({
     </div>
   );
 }
-
-// Tell static export we aren't pre-rendering any [id] paths
-export async function generateStaticParams() {
-  return [];
-}
-export const dynamicParams = false;

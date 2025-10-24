@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import { createBrowserClient } from "@/lib/client"
+import { createClient } from "@/lib/client"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -28,7 +28,7 @@ export function AddCustomerDialog() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
-  const supabase = createBrowserClient()
+  const supabase = createClient()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

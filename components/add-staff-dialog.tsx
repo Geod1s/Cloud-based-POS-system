@@ -62,17 +62,15 @@ export function AddStaffDialog({ open, onOpenChange, tags }: AddStaffDialogProps
       if (authError) throw authError
 
       if (authData.user) {
-        // ✅ Narrow once, then reuse (fixes: 'authData.user' is possibly 'null')
-        const createdUserId = authData.user.id
-
         // Assign tags to user
         if (selectedTags.length > 0) {
           const userTags = selectedTags.map((tagId) => ({
-            user_id: createdUserId,
+            user_id: authData.user.id,
             tag_id: tagId,
           }))
 
           const { error: tagsError } = await supabase.from("user_tags").insert(userTags)
+
           if (tagsError) throw tagsError
         }
 
@@ -87,14 +85,11 @@ export function AddStaffDialog({ open, onOpenChange, tags }: AddStaffDialogProps
         setSelectedTags([])
         onOpenChange(false)
         router.refresh()
-      } else {
-        // Optional: handle flows where Supabase returns no user (e.g., email confirmation required)
-        throw new Error("No user returned from sign-up. Check email verification or auth settings.")
       }
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error?.message || "Failed to create staff user",
+        description: error.message || "Failed to create staff user",
         variant: "destructive",
       })
     } finally {

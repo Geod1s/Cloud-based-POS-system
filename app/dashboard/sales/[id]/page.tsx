@@ -1,4 +1,3 @@
-// app/dashboard/sales/[id]/page.tsx
 // Server Component (no "use client")
 import { createClient } from "@/lib/server";
 import { notFound } from "next/navigation";
@@ -7,12 +6,8 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SalesClient, { ReceiptWrapper } from "./SalesClient"; // client child
 
-export default async function SalePage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
+export default async function SalePage({ params }: { params: { id: string } }) {
+  const { id } = params;
 
   const supabase = await createClient();
 
@@ -58,9 +53,3 @@ export default async function SalePage({
     </div>
   );
 }
-
-// Make static export happy — no dynamic paths to pre-render
-export async function generateStaticParams() {
-  return [];
-}
-export const dynamicParams = false;

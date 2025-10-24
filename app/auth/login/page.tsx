@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { createBrowserClient } from "@/lib/client"
+import { createClient } from "@/lib/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -20,7 +20,7 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    const supabase = createBrowserClient()
+    const supabase = createClient()
     setIsLoading(true)
     setError(null)
 

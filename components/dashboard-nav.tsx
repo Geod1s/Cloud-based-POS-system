@@ -1,6 +1,6 @@
 "use client"
 
-import { createBrowserClient } from "@/lib/client"
+import { createClient } from "@/lib/client"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
@@ -35,7 +35,7 @@ export function DashboardNav({ user, profile }: DashboardNavProps) {
   const [isOpen, setIsOpen] = useState(false)
 
   const handleLogout = async () => {
-    const supabase = createBrowserClient()
+    const supabase = createClient()
     await supabase.auth.signOut()
     router.push("/auth/login")
     router.refresh()
@@ -96,8 +96,7 @@ export function DashboardNav({ user, profile }: DashboardNavProps) {
                   href={item.href}
                   onClick={() => setIsOpen(false)}
                   className={cn(
-                    // removed 'nav-item-swing', limit to color transitions only
-                    "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors",
+                    "nav-item-swing flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all",
                     isActive
                       ? "bg-gradient-to-r from-blue-600 to-teal-600 text-white shadow-lg shadow-blue-600/20"
                       : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground",
@@ -126,13 +125,12 @@ export function DashboardNav({ user, profile }: DashboardNavProps) {
                       href={item.href}
                       onClick={() => setIsOpen(false)}
                       className={cn(
-                        // removed 'nav-item-swing' here as well
-                        "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors",
+                        "nav-item-swing flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all",
                         isActive
                           ? "bg-gradient-to-r from-blue-600 to-teal-600 text-white shadow-lg shadow-blue-600/20"
                           : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground",
                       )}
-                >
+                    >
                       <Icon className="h-5 w-5" />
                       {item.label}
                     </Link>
