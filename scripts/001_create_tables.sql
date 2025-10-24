@@ -1,6 +1,5 @@
 -- Enable UUID extension
 create extension if not exists "uuid-ossp";
-
 -- Categories table
 create table if not exists public.categories (
   id uuid primary key default uuid_generate_v4(),

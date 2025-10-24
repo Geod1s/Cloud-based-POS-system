@@ -1,32 +1,71 @@
-import { createClient } from "@/lib/server"
-import { DebtsTable } from "@/components/debts-table"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+// app/dashboard/debts/page.tsx
+"use client";
 
-export default async function DebtsPage() {
-  const supabase = await createClient()
+import * as React from "react";
+import { createBrowserClient } from "@/lib/client";
+import { DebtsTable } from "@/components/debts-table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-  // Fetch all debts with customer and sale information
-  const { data: debts } = await supabase
-    .from("debts")
-    .select(
-      `
-      *,
-      customers (
-        id,
-        name,
-        phone
-      ),
-      sales (
-        id,
-        sale_number
-      )
-    `,
-    )
-    .order("created_at", { ascending: false })
+export default function DebtsPage() {
+  const [debts, setDebts] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [err, setErr] = React.useState<string | null>(null);
 
-  const pendingDebts = debts?.filter((debt) => debt.status === "pending") || []
-  const partialDebts = debts?.filter((debt) => debt.status === "partial") || []
-  const paidDebts = debts?.filter((debt) => debt.status === "paid") || []
+  React.useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        setLoading(true);
+        setErr(null);
+
+        const supabase = createBrowserClient();
+
+        // Fetch all debts with customer and sale information
+        const { data, error } = await supabase
+          .from("debts")
+          .select(
+            `
+            *,
+            customers (
+              id,
+              name,
+              phone
+            ),
+            sales (
+              id,
+              sale_number
+            )
+          `
+          )
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+        if (!cancelled) setDebts(data ?? []);
+      } catch (e: any) {
+        if (!cancelled) setErr(e?.message || "Failed to load debts.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const pendingDebts = React.useMemo(
+    () => (debts ?? []).filter((d: any) => d.status === "pending"),
+    [debts]
+  );
+  const partialDebts = React.useMemo(
+    () => (debts ?? []).filter((d: any) => d.status === "partial"),
+    [debts]
+  );
+  const paidDebts = React.useMemo(
+    () => (debts ?? []).filter((d: any) => d.status === "paid"),
+    [debts]
+  );
 
   return (
     <div className="space-y-6">
@@ -35,25 +74,30 @@ export default async function DebtsPage() {
         <p className="text-muted-foreground">Track and manage customer debts</p>
       </div>
 
-      <Tabs defaultValue="pending" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="pending">Pending ({pendingDebts.length})</TabsTrigger>
-          <TabsTrigger value="partial">Partial ({partialDebts.length})</TabsTrigger>
-          <TabsTrigger value="paid">Paid ({paidDebts.length})</TabsTrigger>
-        </TabsList>
+      {loading && <div className="text-sm text-muted-foreground">Loading…</div>}
+      {err && !loading && <div className="text-sm text-red-600">Error: {err}</div>}
 
-        <TabsContent value="pending">
-          <DebtsTable debts={pendingDebts} />
-        </TabsContent>
+      {!loading && !err && (
+        <Tabs defaultValue="pending" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="pending">Pending ({pendingDebts.length})</TabsTrigger>
+            <TabsTrigger value="partial">Partial ({partialDebts.length})</TabsTrigger>
+            <TabsTrigger value="paid">Paid ({paidDebts.length})</TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="partial">
-          <DebtsTable debts={partialDebts} />
-        </TabsContent>
+          <TabsContent value="pending">
+            <DebtsTable debts={pendingDebts} />
+          </TabsContent>
 
-        <TabsContent value="paid">
-          <DebtsTable debts={paidDebts} />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="partial">
+            <DebtsTable debts={partialDebts} />
+          </TabsContent>
+
+          <TabsContent value="paid">
+            <DebtsTable debts={paidDebts} />
+          </TabsContent>
+        </Tabs>
+      )}
     </div>
-  )
+  );
 }

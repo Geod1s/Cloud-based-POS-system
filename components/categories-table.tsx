@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { createClient } from "@/lib/client"
+import { createBrowserClient } from "@/lib/client"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
@@ -35,7 +35,7 @@ export function CategoriesTable({ categories }: CategoriesTableProps) {
   const [editCategory, setEditCategory] = useState<Category | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = createBrowserClient()
 
   const handleDelete = async () => {
     if (!deleteId) return
