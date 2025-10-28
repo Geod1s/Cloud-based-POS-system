@@ -1,32 +1,27 @@
 // lib/local-db.ts
-import Database from "@tauri-apps/plugin-sql";
-import { LOCAL_SCHEMA } from "./local-schema";
+import Database from '@tauri-apps/plugin-sql';
 
-let _db: Database | null = null;
+// Minimal shape we need from the DB object
+type DB = {
+  select: (sql: string, args?: unknown[]) => Promise<unknown[]>;
+  execute: (sql: string, args?: unknown[]) => Promise<void>;
+};
 
-export async function getLocalDb(): Promise<Database> {
+let _db: DB | null = null;
+
+export async function getLocalDb(): Promise<DB> {
   if (_db) return _db;
 
-  // Optional guard so the browser build throws a clear message instead of crashing
-  if (typeof window !== "undefined" && !(window as any).__TAURI__) {
-    throw new Error("Local SQLite is only available in the Tauri app runtime.");
+  // If we're NOT inside Tauri (i.e., running in web/Next dev), return a no-op DB.
+  if (typeof window !== 'undefined' && !(window as any).__TAURI__) {
+    _db = {
+      async select() { return []; },          // no results in web mode
+      async execute() { /* no-op in web */ }, // silently ignore writes in web mode
+    };
+    return _db;
   }
 
-  _db = await Database.load("sqlite:cloudpos.db");
-  await ensureSchema(_db);
+  // Tauri app runtime: open real SQLite
+  _db = (await Database.load('sqlite:cloudpos.db')) as unknown as DB;
   return _db;
-}
-
-async function ensureSchema(db: Database): Promise<void> {
-  const rows = (await db.select("PRAGMA user_version")) as Array<{ user_version: number }>;
-  const current = rows?.[0]?.user_version ?? 0;
-
-  if (current < 1) {
-    await db.execute("BEGIN");
-    for (const stmt of LOCAL_SCHEMA.split(";").map((s) => s.trim()).filter(Boolean)) {
-      await db.execute(stmt);
-    }
-    await db.execute("PRAGMA user_version = 1");
-    await db.execute("COMMIT");
-  }
 }

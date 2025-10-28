@@ -1,0 +1,9 @@
+| Feature                      | Status    | What to Add                              |
+| ---------------------------- | --------- | ---------------------------------------- |
+| SQLite local DB              | ✅ present | Create schema and access layer           |
+| Key–Value / Auth persistence | ❌ missing | Add `tauri-plugin-store`                 |
+| Supabase domain access       | ❌ missing | Update `tauri.conf.json` CSP + allowlist |
+| Sync push/pull logic         | ❌ missing | Add `lib/sync.ts`                        |
+| Offline auth storage         | ❌ missing | Replace localStorage with Tauri Store    |
+| Online/offline detection     | ❌ missing | Add hook `useOnlineStatus`               |
+| Conflict resolution / queue  | ❌ missing | Implement `change_queue` table           |
